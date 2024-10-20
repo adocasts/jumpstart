@@ -26,16 +26,17 @@ export default class JumpstartScaffold extends BaseScaffold {
       this.logger.log(
         this.colors.blue("You'll need @adonisjs/lucid installed and configured to continue")
       )
-      await ace.exec('add @adonisjs/lucid', [])
+      await ace.exec('add', ['@adonisjs/lucid'])
     }
 
     if (!isAuthConfigured) {
       this.logger.log(
         this.colors.blue("You'll need @adonisjs/auth installed and configured to continue")
       )
-      await ace.exec('add @adonisjs/auth', [])
+      await ace.exec('add', ['@adonisjs/auth'])
     }
 
+    // TODO: doesn't seem to complete configuration
     if (!isMailConfigured) {
       this.logger.log(
         this.colors.blue("You'll need @adonisjs/mail installed and configured to continue")
@@ -76,6 +77,8 @@ export default class JumpstartScaffold extends BaseScaffold {
 
   async #registerPreloads() {
     await this.codemods.makeUsingStub(stubsRoot, 'start/globals.stub', {})
+
+    // TODO: join these into the existing routes.ts file
     await this.codemods.makeUsingStub(stubsRoot, 'routes/auth.stub', {})
     await this.codemods.makeUsingStub(stubsRoot, 'routes/web.stub', {})
 
@@ -88,7 +91,9 @@ export default class JumpstartScaffold extends BaseScaffold {
   }
 
   async #generateStubs() {
-    // stubs -> views
+    //* NOTE: copy utils from base_scaffold exist because Tempura throws an exception on the backticked contents (escaped or not)
+
+    // stubs -> views -- using cp due to the number of files
     await cp(this.app.makePath(stubsRoot, 'views'), this.app.viewsPath(), {
       recursive: true,
       force: false,
