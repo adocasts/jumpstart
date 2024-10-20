@@ -1,0 +1,13 @@
+<div x-data="{ toastDuration: 5000 }" class="fixed bottom-4 right-4">
+  @if (flashMessages.has('info'))
+    @!toast({ variant: 'info', text: flashMessages.get('info') })
+  @elseif (flashMessages.has('success'))
+    @!toast({ variant: 'success', text: flashMessages.get('success') })
+  @elseif (flashMessages.has('error'))
+    @!toast({ variant: 'error', text: flashMessages.get('error') })
+  @elseif (flashMessages.has('errorsBag'))
+    @!toast({ variant: 'error', text: Object.values(flashMessages.get('errorsBag')).join(', ') })
+  @elseif (flashMessages.has('warning'))
+    @!toast({ variant: 'warning', text: flashMessages.get('warning') })
+  @endif
+</div>

@@ -1,0 +1,36 @@
+{{-- Markup Sourced From: https://preline.co/examples/forms-authentication.html --}}
+@layout.auth({ title: 'Register' })
+
+  <div class="text-center">
+    <h1 class="block text-2xl font-bold text-gray-800">
+      Register
+    </h1>
+    <p class="mt-2 text-sm text-gray-600">
+      <span>Already have an account?</span>
+      <a href="{{ route('auth.login.show') }}" class="text-blue-600 decoration-2 hover:underline focus:outline-none focus:underline font-medium">
+        Login here
+      </a>
+    </p>
+  </div>
+
+  <div class="mt-5">
+    @form({ action: form.post('auth.register.store'), class: 'grid gap-y-4' })
+      @form.group({ label: 'Full name', name: 'fullName' })
+        @!form.input()
+      @end
+
+      @form.group({ label: 'Email address', name: 'email' })
+        @!form.input({ type: 'email', required: true })
+      @end
+
+      @form.group({ label: 'Password', name: 'password' })
+        @!form.input({ type: 'password', required: true })
+      @end
+
+      @button({ type: 'submit' })
+        Register
+      @end
+    @end
+  </div>
+
+@end

@@ -1,0 +1,8 @@
+<label
+  @if (id || $context.id)
+    for="{{ id || $context.id }}"
+  @endif
+
+  class="block text-sm mb-2">
+  {{ label }}
+</label>

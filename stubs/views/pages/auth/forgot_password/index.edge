@@ -1,0 +1,46 @@
+{{-- Markup Sourced From: https://preline.co/examples/forms-authentication.html --}}
+@layout.auth({ title: 'Forgot Password' })
+  <div class="text-center">
+    <h1 class="block text-2xl font-bold text-gray-800">
+      Forgot password?
+    </h1>
+    <p class="mt-2 text-sm text-gray-600">
+      <span>Remember your password?</span>
+      <a href="{{ route('auth.login.show') }}" class="text-blue-600 decoration-2 hover:underline focus:outline-none focus:underline font-medium">
+        Login here
+      </a>
+    </p>
+  </div>
+
+  @if (isSent)
+    <!-- Email Sent Notification -->
+    <div class="mt-5 relative w-full rounded-lg border border-transparent bg-blue-600 p-4 [&>svg]:absolute [&>svg]:text-foreground [&>svg]:left-4 [&>svg]:top-4 [&>svg+div]:translate-y-[-3px] [&:has(svg)]:pl-11 text-white">
+      @!svg('ph:info', { class: 'w-5 h-5 -translate-y-0.5' })
+      <h5 class="mb-1 font-medium leading-none tracking-tight">
+        Please check your email
+      </h5>
+      <div class="text-sm opacity-80">
+        We have sent a password reset link to your email. Please check your email and click on the
+        link to reset your password.
+      </div>
+    </div>
+    <!-- End Email Sent Notification -->
+
+    <div class="flex justify-center mt-3">
+      <a href="{{ route('auth.login.show') }}" class="pe-3.5 inline-flex items-center gap-x-2 text-sm text-gray-600 decoration-2 hover:underline hover:text-blue-600 focus:outline-none focus:underline focus:text-blue-600">
+        @!svg('ph:caret-left', { class: 'size-2.5' })
+        Back to login
+      </a>
+    </div>
+  @else
+    @form({ action: form.post('auth.password.send'), class: 'mt-5 grid gap-y-4' })
+      @form.group({ label: 'Email address', name: 'email' })
+        @!form.input({ type: 'email', required: true })
+      @end
+
+      @button({ type: 'submit' })
+        Reset password
+      @end
+    @end
+  @endif
+@end

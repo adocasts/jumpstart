@@ -1,0 +1,20 @@
+@let(id = $props.id ?? form.generateInputId())
+@let(errors = $props.errors ?? flashMessages.get(`errors.${name}`))
+@let(baseClasses = 'shrink-0 mt-0.5 border-gray-200 rounded text-blue-600 focus:ring-blue-500')
+
+<div class="flex items-center">
+  <div class="flex">
+    <input {{ $props.except(['label']).merge({ id, type: 'checkbox', class: baseClasses }).toAttrs() }} />
+  </div>
+  <div class="ml-3">
+    <label for="{{ id }}" class="text-sm">
+      @if (label)
+        {{ label }}
+      @else
+        {{{ await $slots.main() }}}
+      @end
+    </label>
+  </div>
+</div>
+
+@!form.errors({ id, errors })

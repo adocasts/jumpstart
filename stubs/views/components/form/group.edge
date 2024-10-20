@@ -1,0 +1,19 @@
+@let(id = $props.id ?? form.generateInputId())
+@let(errors = $props.errors ?? flashMessages.get(`errors.${name}`))
+
+@inject({
+  id,
+  name,
+  errors,
+})
+
+<div {{ $props.except(['id', 'label', 'value', 'name']).toAttrs() }}>
+  @if (label)
+    @!form.label({ id, label })
+  @elseif ($slots.label)
+    {{{ await $slots.label() }}}
+  @endif
+  
+  {{{ await $slots.main() }}}
+  @!form.errors({ id, errors })
+</div>

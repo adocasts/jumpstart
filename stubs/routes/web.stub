@@ -1,0 +1,25 @@
+import { middleware } from '#start/kernel'
+import router from '@adonisjs/core/services/router'
+const ProfileController = () => import('#controllers/settings/profile_controller')
+const AccountController = () => import('#controllers/settings/account_controller')
+
+// ignore formatting, easier to visually scan single-line routes
+/* prettier-ignore-start */
+/* eslint-disable */
+
+router.on('/welcome').render('pages/welcome').as('welcome')
+
+//* SETTINGS -> ACCOUNT
+router.get('/settings/account', [AccountController, 'index']).as('settings.account').use(middleware.auth())
+router.put('/settings/account/email', [AccountController, 'updateEmail']).as('settings.account.email').use(middleware.auth())
+router.delete('/settings/account', [AccountController, 'destroy']).as('settings.account.destroy').use(middleware.auth())
+
+//* SETTINGS -> PROFILE
+router.get('/settings/profile', [ProfileController, 'index']).as('settings.profile').use(middleware.auth())
+router.put('/settings/profile', [ProfileController, 'update']).as('settings.profile.update').use(middleware.auth())
+
+{{{
+  exports({
+    to: app.makePath(app.startPath(), 'routes/web.ts'),
+  })
+}}}

@@ -1,0 +1,29 @@
+import { middleware } from '#start/kernel'
+import router from '@adonisjs/core/services/router'
+const LoginController = () => import('#controllers/auth/login_controller')
+const LogoutController = () => import('#controllers/auth/logout_controller')
+const RegisterController = () => import('#controllers/auth/register_controller')
+const ForgotPasswordsController = () => import('#controllers/auth/forgot_passwords_controller')
+
+// ignore formatting, easier to visually scan single-line routes
+/* prettier-ignore-start */
+/* eslint-disable */
+
+//* LOGIN, REGISTER, LOGOUT
+router.get('/login', [LoginController, 'show']).as('auth.login.show').use(middleware.guest())
+router.post('/login', [LoginController, 'store']).as('auth.login.store').use([middleware.guest()])
+router.get('/register', [RegisterController, 'show']).as('auth.register.show').use(middleware.guest())
+router.post('/register', [RegisterController, 'store']).as('auth.register.store').use([middleware.guest()])
+router.post('/logout', [LogoutController, 'handle']).as('auth.logout').use(middleware.auth())
+
+//* FORGOT PASSWORD
+router.get('/forgot-password', [ForgotPasswordsController, 'index']).as('auth.password.index').use([middleware.guest()])
+router.post('/forgot-password', [ForgotPasswordsController, 'send']).as('auth.password.send').use([middleware.guest()])
+router.get('/forgot-password/reset/:value', [ForgotPasswordsController, 'reset']).as('auth.password.reset').use([middleware.guest()])
+router.post('/forgot-password/reset', [ForgotPasswordsController, 'update']).as('auth.password.update').use([middleware.guest()])
+
+{{{
+  exports({
+    to: app.makePath(app.startPath(), 'routes/auth.ts'),
+  })
+}}}

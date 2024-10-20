@@ -1,0 +1,8 @@
+@let(id = $props.id ?? $context.id)
+@let(errors = $props.errors || $context.errors)
+
+@if (errors)
+  <p class="text-xs text-red-600 mt-2" id="{{ id }}-error">
+    {{ errors.join(', ') }}
+  </p>
+@endif

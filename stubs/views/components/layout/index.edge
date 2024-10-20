@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    @if ($slots.head)
+      {{{ await $slots.head() }}}
+    @endif
+
+    <title>
+      {{ title || app.appName }} - AdonisJS
+    </title>
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+  </head>
+  <body class="bg-gray-100">
+    <!-- Navigation: markup sourced from: https://devdojo.com/pines/marketing/navigations -->
+    <header class="w-full px-8 text-gray-700 bg-white">
+      <div class="container flex flex-col flex-wrap items-center justify-between py-3 mx-auto md:flex-row max-w-7xl">
+        <div class="relative flex flex-col md:flex-row">
+          <a href="{{ route('welcome') }}" class="flex items-center mb-5 font-medium text-gray-900 lg:w-auto lg:items-center lg:justify-center md:mb-0">
+            <span class="mx-auto text-xl font-black leading-none text-gray-900 select-none">{{ app.appName }}</span>
+          </a>
+          <nav class="flex flex-wrap items-center mb-5 text-sm md:mb-0 md:pl-8 md:ml-8 md:border-l md:border-gray-200">
+            <a href="/" class="mr-5 font-medium leading-6 text-gray-600 hover:text-gray-900">Home</a>
+            <a href="{{ route('welcome') }}" class="mr-5 font-medium leading-6 text-gray-600 hover:text-gray-900">Welcome</a>
+            <a href="#_" class="mr-5 font-medium leading-6 text-gray-600 hover:text-gray-900">Documentation</a>
+            <a href="https://adonisjs.com" target="_blank" class="mr-5 font-medium leading-6 text-gray-600 hover:text-gray-900">AdonisJS</a>
+            <a href="https://adocasts.com" target="_blank" class="mr-5 font-medium leading-6 text-gray-600 hover:text-gray-900">Adocasts</a>
+          </nav>
+        </div>
+
+        <div class="inline-flex items-center ml-5 space-x-3 lg:justify-end">
+          @if (await auth.check())
+            <div x-data="{ dropdownOpen: false }" class="relative">
+              <button @click="dropdownOpen=true" class="inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors bg-white border rounded-full hover:bg-gray-100 active:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-gray-200/60 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none">
+                @!svg('ph:user', { class: 'w-5 h-5' })
+              </button>
+
+              <div
+                x-show="dropdownOpen"
+                @click.away="dropdownOpen=false"
+                x-transition:enter="ease-out duration-200"
+                x-transition:enter-start="-translate-y-2"
+                x-transition:enter-end="translate-y-0"
+                class="absolute top-0 z-50 w-56 mt-12 right-0"
+                x-cloak
+              >
+                <div class="p-1 mt-1 text-sm bg-white border rounded-md shadow-md border-gray-200/70 text-gray-700">
+                  <a href="{{ route('settings.profile') }}" @click="menuBarOpen=false" class="relative flex justify-between w-full cursor-default select-none group items-center rounded px-2 py-1.5 hover:bg-gray-100 hover:text-gray-900 outline-none data-[disabled]:opacity-50 data-[disabled]:pointer-events-none">
+                    <span>Profile Settings</span>
+                  </a>
+                  <a href="{{ route('settings.account') }}" @click="menuBarOpen=false" class="relative flex justify-between w-full cursor-default select-none group items-center rounded px-2 py-1.5 hover:bg-gray-100 hover:text-gray-900 outline-none data-[disabled]:opacity-50 data-[disabled]:pointer-events-none">
+                    <span>Account Settings</span>
+                  </a>
+
+                  <div class="h-px my-1 -mx-1 bg-gray-200"></div>
+
+                  @form({ action: route('auth.logout') })
+                    <button type="submit" class="relative flex justify-between w-full cursor-default select-none group items-center rounded px-2 py-1.5 hover:bg-gray-100 hover:text-gray-900 outline-none data-[disabled]:opacity-50 data-[disabled]:pointer-events-none">
+                      <span>Logout</span>
+                    </button>
+                  @end
+                </div>
+              </div>
+            </div>
+          @else
+            @button({ href: route('auth.login.show'), variant: 'ghost' })
+              Login
+            @end
+
+            @button({ href: route('auth.register.show') })
+              Register
+            @end
+          @endif
+        </div>
+      </div>
+    </header>
+    <!-- End Navigation -->
+
+    <main class="px-8">
+      {{{ await $slots.main() }}}
+    </main>
+
+    @!toast.flash()
+
+    <script src="//unpkg.com/alpinejs" defer></script>
+  </body>
+</html>

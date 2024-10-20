@@ -1,0 +1,41 @@
+@layout({ title: 'Account Settings' })
+
+  @card({
+    title: 'Update Email',
+    description: "Update your account's email address."
+  })
+    @form({ action: form.put('settings.account.email'), class: 'grid gap-y-4' })
+      @form.group({ label: 'Email address', name: 'email' })
+        @!form.input({ type: 'email', required: true, placeholder: auth.user.email })
+      @end
+
+      @form.group({ label: 'Confirm your password', name: 'password' })
+        @!form.input({ type: 'password', required: true })
+      @end
+
+      <div class="mt-3 flex justify-end gap-x-2">
+        @button({ type: 'submit' })
+          Update Email Address
+        @end
+      </div>
+    @end
+  @end
+
+  @card({
+    title: 'Delete Account',
+    description: "Delete your account and all your data."
+  })
+    @form({ action: form.delete('settings.account.destroy'), class: 'grid gap-y-4' })
+      @form.group({ label: 'Please enter your account email to confirm deletion', name: 'confirmEmail' })
+        @!form.input({ type: 'email', required: true, placeholder: auth.user.email })
+      @end
+
+      <div class="mt-3 flex justify-end gap-x-2">
+        @button({ type: 'submit', variant: 'red' })
+          Delete Account
+        @end
+      </div>
+    @end
+  @end
+
+@end

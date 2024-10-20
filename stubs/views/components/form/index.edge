@@ -1,0 +1,16 @@
+@let(useCSRF = $props.csrf ?? true)
+@let(method = $props.method ?? 'POST')
+
+<form
+  x-data="{ isWorking: false }"
+  method="{{ method }}"
+  action="{{ action || '' }}"
+  @submit="isWorking = true"
+  {{ $props.except(['csrf', 'method', 'action']).toAttrs() }}
+>
+  @if (useCSRF)
+    {{ csrfField() }}
+  @endif
+  
+  {{{ await $slots.main() }}}
+</form>

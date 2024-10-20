@@ -1,0 +1,20 @@
+@layout({ title: 'Profile Settings' })
+
+  @card({
+    title: 'Profile',
+    description: 'Manage your name and other profile settings.'
+  })
+    @form({ action: form.put('settings.profile.update'), class: 'grid gap-y-4' })
+      @form.group({ label: 'Full name', name: 'fullName' })
+        @!form.input({ placeholder: auth.user.fullName ?? '' })
+      @end
+      
+      <div class="mt-3 flex justify-end gap-x-2">
+        @button({ type: 'submit' })
+          Update Profile
+        @end
+      </div>
+    @end
+  @end
+  
+@end

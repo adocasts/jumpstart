@@ -1,0 +1,19 @@
+@let(tag = $props.href ? 'a' : 'button')
+@let(variant = $props.variant ?? 'dark')
+@let(variants = new Map([
+  ['dark', 'bg-black text-white hover:bg-gray-900 focus:bg-gray-900'],
+  ['ghost', 'bg-white text-gray-900 hover:bg-gray-100 focus:bg-gray-100'],
+  ['blue', 'bg-blue-600 text-white hover:bg-blue-700 focus:bg-blue-700'],
+  ['red', 'bg-red-600 text-white hover:bg-red-700 focus:bg-red-700'],
+]))
+@let(baseClasses = `py-2 px-3 inline-flex items-center justify-center gap-x-2 text-sm font-medium rounded border border-transparent focus:outline-none disabled:opacity-50 disabled:pointer-events-none ${variants.get(variant)}`)
+
+<{{ tag }} {{ $props.except(['variant']).merge({ class: baseClasses }).toAttrs() }}>
+  @if (type === 'submit')
+    <span x-cloak x-show="isWorking" class="flex items-center gap-1.5 {{ $props.classInner }}">
+      @svg('svg-spinners:blocks-shuffle-3')
+    </span>
+  @endif
+  
+  {{{ await $slots.main() }}}
+</{{ tag }}>

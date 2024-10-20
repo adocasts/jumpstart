@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    @if ($slots.head)
+      {{{ await $slots.head() }}}
+    @endif
+
+    <title>
+      {{ title || app.appName }} - AdonisJS
+    </title>
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+  </head>
+  <body class="bg-gray-100">
+    <main class="max-w-sm mx-auto mt-7 bg-white border border-gray-200 rounded-xl shadow-sm">
+      <div class="p-4 sm:p-7">
+        {{{ await $slots.main() }}}
+      </div>
+    </main>
+
+    @!toast.flash()
+
+    <script src="//unpkg.com/alpinejs" defer></script>
+  </body>
+</html>
