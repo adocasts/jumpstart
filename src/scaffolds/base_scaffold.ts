@@ -1,11 +1,13 @@
 import { Codemods } from '@adonisjs/core/ace/codemods'
 import ConfigureCommand from '@adonisjs/core/commands/configure'
 import { cp } from 'node:fs/promises'
-import { SyntaxKind } from 'typescript'
 import { stubsRoot } from '../../stubs/main.js'
 import { slash } from '@adonisjs/core/helpers'
+import { readFileOrDefault } from '../utils/file_helper.js'
 export default class BaseScaffold {
   declare codemods: Codemods
+
+  #contents: Map<string, string> = new Map()
 
   constructor(protected command: ConfigureCommand) {}
 
@@ -47,28 +49,13 @@ export default class BaseScaffold {
   }
 
   async isProviderRegistered(path: string) {
-    const project = await this.codemods.getTsMorphProject()
-    const file = project?.getSourceFile(this.app.makePath('adonisrc.ts'))
-    const defaultExport = file?.getDefaultExportSymbol()
+    let contents = this.#contents.get('adonisrc.ts')
 
-    if (!file) {
-      throw new Error('Cannot find the adonisrc.ts file')
+    if (!contents) {
+      contents = await readFileOrDefault(this.app.makePath('adonisrc.ts'), '')
+      this.#contents.set('adonisrc.ts', contents)
     }
 
-    if (!defaultExport) {
-      throw new Error('Cannot find the default export in adonisrc.ts')
-    }
-
-    // get the object contents of `defineConfig`
-    const declaration = defaultExport.getDeclarations()[0]
-    const options =
-      declaration.getChildrenOfKind(SyntaxKind.ObjectLiteralExpression)[0] ||
-      declaration.getChildrenOfKind(SyntaxKind.CallExpression)[0].getArguments()[0]
-
-    const providers = options
-      .getProperty('providers')
-      ?.getFirstChildByKind(SyntaxKind.ArrayLiteralExpression)
-
-    return providers?.getFullText().includes(path)
+    return contents.includes(path)
   }
 }

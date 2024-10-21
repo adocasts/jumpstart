@@ -2,6 +2,7 @@ import { cp, readFile, writeFile } from 'node:fs/promises'
 import BaseScaffold from './base_scaffold.js'
 import ConfigureCommand from '@adonisjs/core/commands/configure'
 import { stubsRoot } from '../../stubs/main.js'
+import TailwindScaffold from './tailwind_scaffold.js'
 
 type Import = {
   defaultImport?: string
@@ -14,9 +15,13 @@ export default class JumpstartScaffold extends BaseScaffold {
     super(command)
   }
 
-  async run() {
-    await this.boot()
+  static installs: { name: string; isDevDependency: boolean }[] = [
+    { name: 'edge-iconify', isDevDependency: false },
+    { name: '@iconify-json/ph', isDevDependency: false },
+    { name: '@iconify-json/svg-spinners', isDevDependency: false },
+  ]
 
+  async run() {
     const ace = await this.app.container.make('ace')
     const isAuthConfigured = await this.isProviderRegistered('@adonisjs/auth/auth_provider')
     const isLucidConfigured = await this.isProviderRegistered('@adonisjs/lucid/database_provider')
@@ -36,7 +41,6 @@ export default class JumpstartScaffold extends BaseScaffold {
       await ace.exec('add', ['@adonisjs/auth'])
     }
 
-    // TODO: doesn't seem to complete configuration
     if (!isMailConfigured) {
       this.logger.log(
         this.colors.blue("You'll need @adonisjs/mail installed and configured to continue")
@@ -44,17 +48,22 @@ export default class JumpstartScaffold extends BaseScaffold {
       await ace.exec('add', ['@adonisjs/mail'])
     }
 
+    await this.boot()
+
     await this.codemods.installPackages([
-      { name: 'edge-iconify', isDevDependency: false },
-      { name: '@iconify-json/ph', isDevDependency: false },
-      { name: '@iconify-json/svg-spinners', isDevDependency: false },
+      ...TailwindScaffold.installs,
+      ...JumpstartScaffold.installs,
     ])
+
+    await new TailwindScaffold(this.command).run()
 
     await this.#updateEnv()
     await this.#enableHttpMethodSpoofing()
     await this.#registerPreloads()
     await this.#generateStubs()
     await this.#updateUserModel()
+
+    await this.logger.success('Jumpstart is all set! Visit /welcome to get started.')
   }
 
   async #updateEnv() {

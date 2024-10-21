@@ -26,16 +26,16 @@ export default class TailwindScaffold extends BaseScaffold {
     super(command)
   }
 
+  static installs: { name: string; isDevDependency: boolean }[] = [
+    { name: 'tailwindcss', isDevDependency: true },
+    { name: 'autoprefixer', isDevDependency: true },
+  ]
+
   async run() {
-    this.codemods = await this.command.createCodemods()
+    await this.boot()
 
     const cssPath = this.app.makePath('resources/css/app.css')
     const cssContents = '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n'
-
-    await this.codemods.installPackages([
-      { name: 'tailwindcss', isDevDependency: true },
-      { name: 'autoprefixer', isDevDependency: true },
-    ])
 
     await this.codemods.makeUsingStub(stubsRoot, 'configs/tailwind.config.stub', {})
 
@@ -56,9 +56,7 @@ export default class TailwindScaffold extends BaseScaffold {
     if (wasChanged) {
       await writeFile(cssPath, css)
 
-      this.logger.log(
-        `${this.colors.green('UPDATED:')} resources/css/app.css > included @tailwind directives &/or x-cloak`
-      )
+      this.logger.action('update resources/css/app.css')
     }
 
     await this.#addViteConfig()
@@ -84,9 +82,7 @@ export default class TailwindScaffold extends BaseScaffold {
     if (imports.length) {
       file.formatText({ indentSize: 2 })
 
-      this.logger.log(
-        `${this.colors.green('UPDATED:')} tailwind.config.ts > added tailwind & autoprefixer plugins`
-      )
+      this.logger.action('create tailwind.config.ts')
     }
 
     await file.save()

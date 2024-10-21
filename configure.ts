@@ -13,10 +13,8 @@
 */
 
 import ConfigureCommand from '@adonisjs/core/commands/configure'
-import TailwindScaffold from './src/scaffolds/tailwind_scaffold.js'
 import JumpstartScaffold from './src/scaffolds/jumpstart_scaffold.js'
 
 export async function configure(command: ConfigureCommand) {
-  await new TailwindScaffold(command).run()
   await new JumpstartScaffold(command).run()
 }
