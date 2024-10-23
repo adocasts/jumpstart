@@ -3,7 +3,6 @@ import BaseScaffold from './base_scaffold.js'
 import ConfigureCommand from '@adonisjs/core/commands/configure'
 import { stubsRoot } from '../../stubs/main.js'
 import TailwindScaffold from './tailwind_scaffold.js'
-import { VariableStatementStructure, VariableDeclarationKind, OptionalKind } from 'ts-morph'
 
 type Import = {
   defaultImport?: string
@@ -156,39 +155,42 @@ export default class JumpstartScaffold extends BaseScaffold {
     }
 
     const contents = file.getText()
-    const controllerImports: OptionalKind<VariableStatementStructure> = {
-      declarationKind: VariableDeclarationKind.Const,
-      declarations: [
-        {
+
+    const lastImportIndex = file.getImportDeclarations().reverse().at(0)?.getChildIndex() ?? 0
+    console.log({ lastImportIndex })
+    file.insertVariableStatements(
+      lastImportIndex + 1,
+      [
+        this.getConstDeclaration(file, {
           name: 'LoginController',
           initializer: "() => import('#controllers/auth/login_controller')",
-        },
-        {
+        }),
+        this.getConstDeclaration(file, {
           name: 'LogoutController',
           initializer: "() => import('#controllers/auth/logout_controller')",
-        },
-        {
+        }),
+        this.getConstDeclaration(file, {
           name: 'RegisterController',
           initializer: "() => import('#controllers/auth/register_controller')",
-        },
-        {
+        }),
+        this.getConstDeclaration(file, {
           name: 'ForgotPasswordController',
           initializer: "() => import('#controllers/auth/forgot_password_controller')",
-        },
-        {
+        }),
+        this.getConstDeclaration(file, {
           name: 'ProfileController',
           initializer: "() => import('#controllers/settings/profile_controller')",
-        },
-        {
+        }),
+        this.getConstDeclaration(file, {
           name: 'AccountController',
           initializer: "() => import('#controllers/settings/account_controller')",
-        },
-      ].filter((declaration) => !file.getVariableDeclaration(declaration.name)),
-    }
+        }),
+      ].filter((declaration) => declaration !== undefined)
+    )
 
-    file.insertVariableStatement(0, controllerImports)
-
-    if (!file.getStatement((statement) => statement.getText().includes('/settings/profile'))) {
+    if (
+      !file.getStatement((statement) => statement.getText().includes('settings.profile.update'))
+    ) {
       file.addStatements(
         [
           '\n',
@@ -202,10 +204,10 @@ export default class JumpstartScaffold extends BaseScaffold {
           "router.post('/logout', [LogoutController, 'handle']).as('auth.logout').use(middleware.auth())",
           '\n',
           '//* AUTH -> FORGOT PASSWORD',
-          "router.get('/forgot-password', [ForgotPasswordsController, 'index']).as('auth.password.index').use([middleware.guest()])",
-          "router.post('/forgot-password', [ForgotPasswordsController, 'send']).as('auth.password.send').use([middleware.guest()])",
-          "router.get('/forgot-password/reset/:value', [ForgotPasswordsController, 'reset']).as('auth.password.reset').use([middleware.guest()])",
-          "router.post('/forgot-password/reset', [ForgotPasswordsController, 'update']).as('auth.password.update').use([middleware.guest()])",
+          "router.get('/forgot-password', [ForgotPasswordController, 'index']).as('auth.password.index').use([middleware.guest()])",
+          "router.post('/forgot-password', [ForgotPasswordController, 'send']).as('auth.password.send').use([middleware.guest()])",
+          "router.get('/forgot-password/reset/:value', [ForgotPasswordController, 'reset']).as('auth.password.reset').use([middleware.guest()])",
+          "router.post('/forgot-password/reset', [ForgotPasswordController, 'update']).as('auth.password.update').use([middleware.guest()])",
           '\n',
           '//* SETTINGS -> ACCOUNT',
           "router.get('/settings/account', [AccountController, 'index']).as('settings.account').use(middleware.auth())",
@@ -234,8 +236,6 @@ export default class JumpstartScaffold extends BaseScaffold {
       this.logger.warning('skipped user model updates, user model not found')
       return
     }
-
-    const contents = model.getText()
 
     imports.add({ namedImports: ['Authenticator'], module: '@adonisjs/auth' })
     imports.add({ namedImports: ['Authenticators'], module: '@adonisjs/auth/types' })
@@ -356,6 +356,8 @@ export default class JumpstartScaffold extends BaseScaffold {
         moduleSpecifier: imp.module,
       })
     })
+
+    file?.formatText()
 
     await file?.save()
 

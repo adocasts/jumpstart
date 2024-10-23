@@ -4,7 +4,13 @@ import { readFileOrDefault } from '../utils/file_helper.js'
 import { slash } from '@adonisjs/core/helpers'
 import { stubsRoot } from '../../stubs/main.js'
 import { cp } from 'node:fs/promises'
-import { SourceFile } from 'ts-morph'
+import {
+  SourceFile,
+  VariableDeclarationStructure,
+  VariableDeclarationKind,
+  OptionalKind,
+} from 'ts-morph'
+
 export default class BaseScaffold {
   declare codemods: Codemods
 
@@ -74,5 +80,13 @@ export default class BaseScaffold {
 
   getLogPath(path: string) {
     return slash(this.app.relativePath(path))
+  }
+
+  getConstDeclaration(file: SourceFile, declaration: OptionalKind<VariableDeclarationStructure>) {
+    if (file.getVariableDeclaration(declaration.name)) return
+    return {
+      declarationKind: VariableDeclarationKind.Const,
+      declarations: [declaration],
+    }
   }
 }
