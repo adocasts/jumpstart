@@ -3,6 +3,7 @@ import BaseScaffold from './base_scaffold.js'
 import ConfigureCommand from '@adonisjs/core/commands/configure'
 import { stubsRoot } from '../../stubs/main.js'
 import TailwindScaffold from './tailwind_scaffold.js'
+import { VariableStatementStructure, VariableDeclarationKind, OptionalKind } from 'ts-morph'
 
 type Import = {
   defaultImport?: string
@@ -61,9 +62,10 @@ export default class JumpstartScaffold extends BaseScaffold {
     await this.#enableHttpMethodSpoofing()
     await this.#registerPreloads()
     await this.#generateStubs()
+    await this.#updateRoutes()
     await this.#updateUserModel()
 
-    await this.logger.success('Jumpstart is all set! Visit /welcome to get started.')
+    this.logger.success('Jumpstart is all set! Visit /welcome to get started.')
   }
 
   async #updateEnv() {
@@ -79,23 +81,18 @@ export default class JumpstartScaffold extends BaseScaffold {
   async #enableHttpMethodSpoofing() {
     const appConfigPath = this.app.makePath('config/app.ts')
     let appConfig = await readFile(appConfigPath, 'utf8')
+
     appConfig = appConfig.replace('allowMethodSpoofing: false', 'allowMethodSpoofing: true')
+
     await writeFile(appConfigPath, appConfig)
-    this.logger.log(`${this.colors.green('UPDATED:')} config/app.ts > enabled HTTP Method Spoofing`)
+
+    this.logger.action('update config/app.ts -> enabled HTTP Method Spoofing').succeeded()
   }
 
   async #registerPreloads() {
     await this.codemods.makeUsingStub(stubsRoot, 'start/globals.stub', {})
-
-    // TODO: join these into the existing routes.ts file
-    await this.codemods.makeUsingStub(stubsRoot, 'routes/auth.stub', {})
-    await this.codemods.makeUsingStub(stubsRoot, 'routes/web.stub', {})
-
     await this.codemods.updateRcFile((rcFile) => {
-      rcFile
-        .addPreloadFile('#start/globals')
-        .addPreloadFile('#start/routes/auth')
-        .addPreloadFile('#start/routes/web')
+      rcFile.addPreloadFile('#start/globals')
     })
   }
 
@@ -107,6 +104,10 @@ export default class JumpstartScaffold extends BaseScaffold {
       recursive: true,
       force: false,
     })
+
+    this.logger
+      .action(`copy ${this.getLogPath(this.app.viewsPath())} -> pages, emails, components`)
+      .succeeded()
 
     // stubs -> migrations
     await this.codemods.makeUsingStub(stubsRoot, 'migrations/create_email_histories_table.stub', {})
@@ -141,6 +142,88 @@ export default class JumpstartScaffold extends BaseScaffold {
     await this.copyController('settings/profile_controller.stub')
   }
 
+  async #updateRoutes() {
+    const project = await this.codemods.getTsMorphProject()
+    const file = project?.getSourceFile(this.app.startPath('routes.ts'))
+
+    if (!file) {
+      this.logger.warning('skipped route updates, routes file not found')
+      return
+    }
+
+    if (!file.getImportDeclaration('#start/kernel')) {
+      file.addImportDeclaration({ namedImports: ['middleware'], moduleSpecifier: '#start/kernel' })
+    }
+
+    const contents = file.getText()
+    const controllerImports: OptionalKind<VariableStatementStructure> = {
+      declarationKind: VariableDeclarationKind.Const,
+      declarations: [
+        {
+          name: 'LoginController',
+          initializer: "() => import('#controllers/auth/login_controller')",
+        },
+        {
+          name: 'LogoutController',
+          initializer: "() => import('#controllers/auth/logout_controller')",
+        },
+        {
+          name: 'RegisterController',
+          initializer: "() => import('#controllers/auth/register_controller')",
+        },
+        {
+          name: 'ForgotPasswordController',
+          initializer: "() => import('#controllers/auth/forgot_password_controller')",
+        },
+        {
+          name: 'ProfileController',
+          initializer: "() => import('#controllers/settings/profile_controller')",
+        },
+        {
+          name: 'AccountController',
+          initializer: "() => import('#controllers/settings/account_controller')",
+        },
+      ].filter((declaration) => !file.getVariableDeclaration(declaration.name)),
+    }
+
+    file.insertVariableStatement(0, controllerImports)
+
+    if (!file.getStatement((statement) => statement.getText().includes('/settings/profile'))) {
+      file.addStatements(
+        [
+          '\n',
+          "router.on('/welcome').render('pages/welcome').as('welcome')",
+          '\n',
+          '//* AUTH -> LOGIN, REGISTER, LOGOUT',
+          "router.get('/login', [LoginController, 'show']).as('auth.login.show').use(middleware.guest())",
+          "router.post('/login', [LoginController, 'store']).as('auth.login.store').use([middleware.guest()])",
+          "router.get('/register', [RegisterController, 'show']).as('auth.register.show').use(middleware.guest())",
+          "router.post('/register', [RegisterController, 'store']).as('auth.register.store').use([middleware.guest()])",
+          "router.post('/logout', [LogoutController, 'handle']).as('auth.logout').use(middleware.auth())",
+          '\n',
+          '//* AUTH -> FORGOT PASSWORD',
+          "router.get('/forgot-password', [ForgotPasswordsController, 'index']).as('auth.password.index').use([middleware.guest()])",
+          "router.post('/forgot-password', [ForgotPasswordsController, 'send']).as('auth.password.send').use([middleware.guest()])",
+          "router.get('/forgot-password/reset/:value', [ForgotPasswordsController, 'reset']).as('auth.password.reset').use([middleware.guest()])",
+          "router.post('/forgot-password/reset', [ForgotPasswordsController, 'update']).as('auth.password.update').use([middleware.guest()])",
+          '\n',
+          '//* SETTINGS -> ACCOUNT',
+          "router.get('/settings/account', [AccountController, 'index']).as('settings.account').use(middleware.auth())",
+          "router.put('/settings/account/email', [AccountController, 'updateEmail']).as('settings.account.email').use(middleware.auth())",
+          "router.delete('/settings/account', [AccountController, 'destroy']).as('settings.account.destroy').use(middleware.auth())",
+          '\n',
+          '//* SETTINGS -> PROFILE',
+          "router.get('/settings/profile', [ProfileController, 'index']).as('settings.profile').use(middleware.auth())",
+          "router.put('/settings/profile', [ProfileController, 'update']).as('settings.profile.update').use(middleware.auth())",
+        ].filter((statement) => statement === '\n' || !contents.includes(statement))
+      )
+    }
+
+    await file.save()
+
+    this.logger.action('update start/routes.ts -> added jumpstart routes').succeeded()
+  }
+
   async #updateUserModel() {
     const project = await this.codemods.getTsMorphProject()
     const file = project?.getSourceFile(this.app.modelsPath('user.ts'))
@@ -148,9 +231,11 @@ export default class JumpstartScaffold extends BaseScaffold {
     const imports: Set<Import> = new Set()
 
     if (!model) {
-      this.logger.log(`${this.colors.yellow('SKIPPED:')} user model updates, model not found.`)
+      this.logger.warning('skipped user model updates, user model not found')
       return
     }
+
+    const contents = model.getText()
 
     imports.add({ namedImports: ['Authenticator'], module: '@adonisjs/auth' })
     imports.add({ namedImports: ['Authenticators'], module: '@adonisjs/auth/types' })
@@ -166,63 +251,72 @@ export default class JumpstartScaffold extends BaseScaffold {
     imports.add({ defaultImport: 'app', module: '@adonisjs/core/services/app' })
     imports.add({ defaultImport: 'EmailHistory', module: '#models/email_history' })
 
-    model.addProperty({
-      isStatic: true,
-      name: 'rememberMeTokens',
-      initializer: 'DbRememberMeTokensProvider.forModel(User)',
-    })
+    if (!model.getProperty('rememberMeTokens')) {
+      model.insertProperty(0, {
+        isStatic: true,
+        name: 'rememberMeTokens',
+        initializer: 'DbRememberMeTokensProvider.forModel(User)',
+      })
+    }
 
-    const login = model.addMethod({
-      isStatic: true,
-      isAsync: true,
-      name: 'login',
-      parameters: [
-        { name: 'auth', type: 'Authenticator<Authenticators>' },
-        {
-          name: '{ email, password, remember }',
-          type: 'Infer<typeof loginValidator>',
-        },
-      ],
-    })
+    if (!model.getMethod('login')) {
+      const login = model.addMethod({
+        isStatic: true,
+        isAsync: true,
+        name: 'login',
+        parameters: [
+          { name: 'auth', type: 'Authenticator<Authenticators>' },
+          {
+            name: '{ email, password, remember }',
+            type: 'Infer<typeof loginValidator>',
+          },
+        ],
+      })
 
-    login.setBodyText(`
+      login.setBodyText(`
       const user = await this.verifyCredentials(email, password)
       await auth.use('web').login(user, remember)
       return user  
     `)
+    }
 
-    const register = model.addMethod({
-      isStatic: true,
-      isAsync: true,
-      name: 'register',
-      parameters: [
-        { name: 'auth', type: 'Authenticator<Authenticators>' },
-        { name: 'data', type: 'Infer<typeof registerValidator>' },
-      ],
-    })
+    if (!model.getMethod('register')) {
+      const register = model.addMethod({
+        isStatic: true,
+        isAsync: true,
+        name: 'register',
+        parameters: [
+          { name: 'auth', type: 'Authenticator<Authenticators>' },
+          { name: 'data', type: 'Infer<typeof registerValidator>' },
+        ],
+      })
 
-    register.setBodyText(`
+      register.setBodyText(`
       const user = await this.create(data)
       await auth.use('web').login(user)
       return user  
     `)
+    }
 
-    const logout = model.addMethod({
-      isStatic: true,
-      isAsync: true,
-      name: 'logout',
-      parameters: [{ name: 'auth', type: 'Authenticator<Authenticators>' }],
-    })
+    if (!model.getMethod('logout')) {
+      const logout = model.addMethod({
+        isStatic: true,
+        isAsync: true,
+        name: 'logout',
+        parameters: [{ name: 'auth', type: 'Authenticator<Authenticators>' }],
+      })
 
-    logout.setBodyText(`await auth.use('web').logout()`)
+      logout.setBodyText(`await auth.use('web').logout()`)
+    }
 
-    const updateEmail = model.addMethod({
-      isAsync: true,
-      name: 'updateEmail',
-      parameters: [{ name: 'data', type: 'Infer<typeof updateEmailValidator>' }],
-    })
+    if (!model.getMethod('updateEmail')) {
+      const updateEmail = model.addMethod({
+        isAsync: true,
+        name: 'updateEmail',
+        parameters: [{ name: 'data', type: 'Infer<typeof updateEmailValidator>' }],
+      })
 
-    updateEmail.setBodyText(`
+      updateEmail.setBodyText(`
       const emailOld = this.email
 
       // verify the password is correct for auth user
@@ -249,6 +343,7 @@ export default class JumpstartScaffold extends BaseScaffold {
           .htmlView('emails/account/email_changed', { user: this })
       })  
     `)
+    }
 
     imports?.forEach((imp) => {
       const exists = file?.getImportDeclaration(imp.module)
@@ -263,5 +358,7 @@ export default class JumpstartScaffold extends BaseScaffold {
     })
 
     await file?.save()
+
+    this.logger.action('update app/models/user -> added auth methods').succeeded()
   }
 }
