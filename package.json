@@ -1,6 +1,6 @@
 {
   "name": "@adocasts.com/jumpstart",
-  "description": "",
+  "description": "Jumpstart your next AdonisJS 6 web project with authentication, forgot password, and more features out-of-the-box.",
   "version": "0.0.0",
   "engines": {
     "node": ">=20.6.0"
@@ -62,8 +62,18 @@
   "keywords": [
     "adonisjs",
     "auth",
-    "lucid"
+    "lucid",
+    "forgot-password",
+    "scaffold"
   ],
+  "homepage": "https://github.com/adocasts/jumpstart#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adocasts/jumpstart.git"
+  },
+  "bugs": {
+    "url": "https://github.com/adocasts/jumpstart/issues"
+  },
   "eslintConfig": {
     "extends": "@adonisjs/eslint-config/package"
   },

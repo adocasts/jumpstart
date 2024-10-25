@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { stubsRoot } from '../../stubs/main.js'
 import BaseScaffold from './base_scaffold.js'
 import TailwindScaffold from './tailwind_scaffold.js'
+import { exec } from '../utils/child_process.js'
 
 type Import = {
   defaultImport?: string
@@ -49,6 +50,14 @@ export default class JumpstartScaffold extends BaseScaffold {
     await this.#updateUserModel()
 
     this.logger.success('Jumpstart is all set! Visit /jumpstart to get started.')
+
+    const selfDestruct = await this.command.prompt.confirm(
+      "We're all done here, would you like to uninstall @adocasts.com/jumpstart?"
+    )
+
+    if (selfDestruct) {
+      await exec('npm uninstall @adocasts.com/jumpstart')
+    }
   }
 
   async #verifyCoreDependencies() {
