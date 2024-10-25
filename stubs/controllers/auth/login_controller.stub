@@ -14,6 +14,6 @@ export default class LoginController {
 
     session.flash('success', user.fullName ? `${baseMessage}, ${user.fullName}` : baseMessage)
 
-    return response.redirect().toRoute('welcome')
+    return response.redirect().toRoute('jumpstart')
   }
 }

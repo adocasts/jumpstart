@@ -1,7 +1,7 @@
-import { cp, readFile, writeFile } from 'node:fs/promises'
-import BaseScaffold from './base_scaffold.js'
 import ConfigureCommand from '@adonisjs/core/commands/configure'
+import { readFile, writeFile } from 'node:fs/promises'
 import { stubsRoot } from '../../stubs/main.js'
+import BaseScaffold from './base_scaffold.js'
 import TailwindScaffold from './tailwind_scaffold.js'
 
 type Import = {
@@ -11,52 +11,36 @@ type Import = {
 }
 
 export default class JumpstartScaffold extends BaseScaffold {
+  #isWeb = true
+
   constructor(protected command: ConfigureCommand) {
     super(command)
   }
 
   static installs: { name: string; isDevDependency: boolean }[] = [
+    ...TailwindScaffold.installs,
     { name: 'edge-iconify', isDevDependency: false },
     { name: '@iconify-json/ph', isDevDependency: false },
     { name: '@iconify-json/svg-spinners', isDevDependency: false },
   ]
 
   async run() {
-    const ace = await this.app.container.make('ace')
-    const isAuthConfigured = await this.isProviderRegistered('@adonisjs/auth/auth_provider')
-    const isLucidConfigured = await this.isProviderRegistered('@adonisjs/lucid/database_provider')
-    const isMailConfigured = await this.isProviderRegistered('@adonisjs/mail/mail_provider')
+    // have user install & configure required missing core packages
+    await this.#verifyCoreDependencies()
 
-    if (!isLucidConfigured) {
-      this.logger.log(
-        this.colors.blue("You'll need @adonisjs/lucid installed and configured to continue")
-      )
-      await ace.exec('add', ['@adonisjs/lucid'])
-    }
-
-    if (!isAuthConfigured) {
-      this.logger.log(
-        this.colors.blue("You'll need @adonisjs/auth installed and configured to continue")
-      )
-      await ace.exec('add', ['@adonisjs/auth'])
-    }
-
-    if (!isMailConfigured) {
-      this.logger.log(
-        this.colors.blue("You'll need @adonisjs/mail installed and configured to continue")
-      )
-      await ace.exec('add', ['@adonisjs/mail'])
-    }
-
+    // once ace commands are done, let's get our codemods set up
     await this.boot()
 
-    await this.codemods.installPackages([
-      ...TailwindScaffold.installs,
-      ...JumpstartScaffold.installs,
-    ])
+    // first install packages, we'll install these into the user's project so they can
+    // update them as they see fit
+    const packageNames = JumpstartScaffold.installs.map((install) => install.name).join(', ')
+    this.logger.info(`We're going to install ${packageNames} to add TailwindCSS & Iconify`)
+    await this.codemods.installPackages(JumpstartScaffold.installs)
 
+    // complete tailwindcss scaffolding
     await new TailwindScaffold(this.command).run()
 
+    // complete jumpstart scaffolding
     await this.#updateEnv()
     await this.#enableHttpMethodSpoofing()
     await this.#registerPreloads()
@@ -64,7 +48,100 @@ export default class JumpstartScaffold extends BaseScaffold {
     await this.#updateRoutes()
     await this.#updateUserModel()
 
-    this.logger.success('Jumpstart is all set! Visit /welcome to get started.')
+    this.logger.success('Jumpstart is all set! Visit /jumpstart to get started.')
+  }
+
+  async #verifyCoreDependencies() {
+    const ace = await this.app.container.make('ace')
+
+    const isViteConfigured = await this.hasProvider('@adonisjs/vite/vite_provider')
+    const isVineConfigured = await this.hasProvider('@adonisjs/core/providers/vinejs_provider')
+    const isEdgeConfigured = await this.hasProvider('@adonisjs/core/providers/edge_provider')
+    const isSessionConfigured = await this.hasProvider('@adonisjs/session/session_provider')
+    const isShieldConfigured = await this.hasProvider('@adonisjs/shield/shield_provider')
+    const isAuthConfigured = await this.hasProvider('@adonisjs/auth/auth_provider')
+    const isLucidConfigured = await this.hasProvider('@adonisjs/lucid/database_provider')
+    const isMailConfigured = await this.hasProvider('@adonisjs/mail/mail_provider')
+
+    if (!isViteConfigured) {
+      this.logger.log('') // let's add a blank line in-between these
+      this.logger.log(
+        this.colors.bgBlue("Vite is needed to bundle tailwind assets, let's add @adonisjs/vite")
+      )
+
+      await ace.exec('add', ['@adonisjs/vite'])
+    }
+
+    if (!isVineConfigured) {
+      this.logger.log('') // let's add a blank line in-between these
+      this.logger.log(
+        this.colors.bgBlue("VineJS is needed for Jumpstart's validations, let's add vinejs")
+      )
+
+      await ace.exec('add', ['vinejs'])
+    }
+
+    if (!isEdgeConfigured) {
+      this.logger.log('') // let's add a blank line in-between these
+      this.logger.log(
+        this.colors.bgBlue("Jumpstart uses EdgeJS for its pages & emails, let's add edge")
+      )
+
+      await ace.exec('add', ['edge'])
+    }
+
+    if (!isSessionConfigured) {
+      this.logger.log('') // let's add a blank line in-between these
+      this.logger.log(
+        this.colors.bgBlue(
+          "Session is needed for authentication & toast messaging, let's add @adonisjs/session"
+        )
+      )
+
+      await ace.exec('add', ['@adonisjs/session'])
+    }
+
+    if (!isShieldConfigured) {
+      this.logger.log('') // let's add a blank line in-between these
+      this.logger.log(
+        this.colors.bgBlue(
+          "Shield is recommended for CSRF & other protections, let's add @adonisjs/shield"
+        )
+      )
+
+      await ace.exec('add', ['@adonisjs/shield'])
+    }
+
+    if (!isLucidConfigured) {
+      this.logger.log('') // let's add a blank line in-between these
+      this.logger.log(
+        this.colors.bgBlue(
+          "Jumpstart uses Lucid as it's ORM for models & queries, let's add @adonisjs/lucid"
+        )
+      )
+
+      await ace.exec('add', ['@adonisjs/lucid'])
+    }
+
+    if (!isAuthConfigured) {
+      this.logger.log('') // let's add a blank line in-between these
+      this.logger.log(
+        this.colors.bgBlue("Jumpstart adds authentication scaffolding, let's add @adonisjs/auth")
+      )
+
+      await ace.exec('add', ['@adonisjs/auth', '--guard=session'])
+    }
+
+    if (!isMailConfigured) {
+      this.logger.log('') // let's add a blank line in-between these
+      this.logger.log(
+        this.colors.bgBlue(
+          "Jumpstart includes emails for the forgot password flow & email change notifications. Let's add @adonisjs/mail"
+        )
+      )
+
+      await ace.exec('add', ['@adonisjs/mail'])
+    }
   }
 
   async #updateEnv() {
@@ -78,6 +155,8 @@ export default class JumpstartScaffold extends BaseScaffold {
   }
 
   async #enableHttpMethodSpoofing() {
+    if (!this.#isWeb) return
+
     const appConfigPath = this.app.makePath('config/app.ts')
     let appConfig = await readFile(appConfigPath, 'utf8')
 
@@ -89,6 +168,8 @@ export default class JumpstartScaffold extends BaseScaffold {
   }
 
   async #registerPreloads() {
+    if (!this.#isWeb) return
+
     await this.codemods.makeUsingStub(stubsRoot, 'start/globals.stub', {})
     await this.codemods.updateRcFile((rcFile) => {
       rcFile.addPreloadFile('#start/globals')
@@ -98,28 +179,18 @@ export default class JumpstartScaffold extends BaseScaffold {
   async #generateStubs() {
     //* NOTE: copy utils from base_scaffold exist because Tempura throws an exception on the backticked contents (escaped or not)
 
-    // stubs -> views -- using cp due to the number of files
-    await cp(this.app.makePath(stubsRoot, 'views'), this.app.viewsPath(), {
-      recursive: true,
-      force: false,
-    })
+    // stubs -> views
+    if (this.#isWeb) {
+      await this.copyView('components')
+      await this.copyView('pages')
+    }
 
-    this.logger
-      .action(`copy ${this.getLogPath(this.app.viewsPath())} -> pages, emails, components`)
-      .succeeded()
+    await this.copyView('emails')
 
     // stubs -> migrations
-    await this.codemods.makeUsingStub(stubsRoot, 'migrations/create_email_histories_table.stub', {})
-    await this.codemods.makeUsingStub(
-      stubsRoot,
-      'migrations/create_password_reset_tokens_table.stub',
-      {}
-    )
-    await this.codemods.makeUsingStub(
-      stubsRoot,
-      'migrations/create_remember_me_tokens_table.stub',
-      {}
-    )
+    this.stubMigration('migrations/create_email_histories_table.stub')
+    this.stubMigration('migrations/create_password_reset_tokens_table.stub')
+    this.stubMigration('migrations/create_remember_me_tokens_table.stub')
 
     // stubs -> models
     await this.copyModel('email_history.stub')
@@ -130,7 +201,9 @@ export default class JumpstartScaffold extends BaseScaffold {
     await this.codemods.makeUsingStub(stubsRoot, 'validators/settings.stub', {})
 
     // stubs -> services
-    await this.codemods.makeUsingStub(stubsRoot, 'services/edge_form_service.stub', {})
+    if (this.#isWeb) {
+      await this.codemods.makeUsingStub(stubsRoot, 'services/edge_form_service.stub', {})
+    }
 
     // stubs -> controllers
     await this.copyController('auth/forgot_password_controller.stub')
@@ -157,7 +230,7 @@ export default class JumpstartScaffold extends BaseScaffold {
     const contents = file.getText()
 
     const lastImportIndex = file.getImportDeclarations().reverse().at(0)?.getChildIndex() ?? 0
-    console.log({ lastImportIndex })
+
     file.insertVariableStatements(
       lastImportIndex + 1,
       [
@@ -194,7 +267,7 @@ export default class JumpstartScaffold extends BaseScaffold {
       file.addStatements(
         [
           '\n',
-          "router.on('/welcome').render('pages/welcome').as('welcome')",
+          "router.on('/jumpstart').render('pages/jumpstart').as('jumpstart')",
           '\n',
           '//* AUTH -> LOGIN, REGISTER, LOGOUT',
           "router.get('/login', [LoginController, 'show']).as('auth.login.show').use(middleware.guest())",
@@ -276,7 +349,7 @@ export default class JumpstartScaffold extends BaseScaffold {
       login.setBodyText(`
       const user = await this.verifyCredentials(email, password)
       await auth.use('web').login(user, remember)
-      return user  
+      return user
     `)
     }
 
@@ -294,7 +367,7 @@ export default class JumpstartScaffold extends BaseScaffold {
       register.setBodyText(`
       const user = await this.create(data)
       await auth.use('web').login(user)
-      return user  
+      return user
     `)
     }
 
@@ -341,7 +414,7 @@ export default class JumpstartScaffold extends BaseScaffold {
           .to(emailOld)
           .subject(\`Your \${app.appName} email has been successfully changed\`)
           .htmlView('emails/account/email_changed', { user: this })
-      })  
+      })
     `)
     }
 

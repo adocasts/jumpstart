@@ -1,5 +1,5 @@
 import ConfigureCommand from '@adonisjs/core/commands/configure'
-import { writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { SourceFile, Symbol } from 'ts-morph'
 import { SyntaxKind } from 'typescript'
 import { stubsRoot } from '../../stubs/main.js'
@@ -12,15 +12,22 @@ type Import = {
 }
 
 export default class TailwindScaffold extends BaseScaffold {
-  tailwindImport: Import = {
-    name: 'tailwind',
-    module: 'tailwindcss',
-  }
-
-  autoprefixerImport: Import = {
-    name: 'autoprefixer',
-    module: 'autoprefixer',
-  }
+  #imports = new Map<string, Import>([
+    [
+      'tailwind',
+      {
+        name: 'tailwind',
+        module: 'tailwindcss',
+      },
+    ],
+    [
+      'autoprefixer',
+      {
+        name: 'autoprefixer',
+        module: 'autoprefixer',
+      },
+    ],
+  ])
 
   constructor(protected command: ConfigureCommand) {
     super(command)
@@ -34,12 +41,13 @@ export default class TailwindScaffold extends BaseScaffold {
   async run() {
     await this.boot()
 
-    const cssPath = this.app.makePath('resources/css/app.css')
+    const cssPath = this.app.makePath('resources/css')
+    const cssFile = this.app.makePath('resources/css/app.css')
     const cssContents = '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n'
 
     await this.codemods.makeUsingStub(stubsRoot, 'configs/tailwind.config.stub', {})
 
-    let css = await readFileOrDefault(cssPath, '')
+    let css = await readFileOrDefault(cssFile, '')
     let wasChanged = false
 
     if (!css.includes('[x-cloak]')) {
@@ -54,7 +62,8 @@ export default class TailwindScaffold extends BaseScaffold {
     }
 
     if (wasChanged) {
-      await writeFile(cssPath, css)
+      await mkdir(cssPath, { recursive: true })
+      await writeFile(cssFile, css)
 
       this.logger.action('update resources/css/app.css')
     }
@@ -105,7 +114,7 @@ export default class TailwindScaffold extends BaseScaffold {
         name: 'css',
         initializer: `{ postcss: { plugins: [tailwind(), autoprefixer()] } }`,
       })
-      return [this.tailwindImport, this.autoprefixerImport]
+      return [...this.#imports.values()]
     }
 
     // 2. if there is a `css` property but not a `postcss` property,
@@ -119,7 +128,7 @@ export default class TailwindScaffold extends BaseScaffold {
         name: 'postcss',
         initializer: '{ plugins: [tailwind(), autoprefixer()] }',
       })
-      return [this.tailwindImport, this.autoprefixerImport]
+      return [...this.#imports.values()]
     }
 
     // 3. if there is a `css.postcss` property, but it doesn't contain `plugins`,
@@ -133,7 +142,7 @@ export default class TailwindScaffold extends BaseScaffold {
         name: 'plugins',
         initializer: '[tailwind(), autoprefixer()]',
       })
-      return [this.tailwindImport, this.autoprefixerImport]
+      return [...this.#imports.values()]
     }
 
     // 4. if there is a `css.postcss.plugins` property,
@@ -147,12 +156,12 @@ export default class TailwindScaffold extends BaseScaffold {
 
     if (!pluginItems?.includes('tailwind()')) {
       plugins.insertElement(0, 'tailwind()')
-      imports.push(this.tailwindImport)
+      imports.push(this.#imports.get('tailwind')!)
     }
 
     if (!pluginItems.includes('autoprefixer()')) {
       plugins.addElement('autoprefixer()')
-      imports.push(this.autoprefixerImport)
+      imports.push(this.#imports.get('autoprefixer')!)
     }
 
     return imports

@@ -3,7 +3,7 @@ import ConfigureCommand from '@adonisjs/core/commands/configure'
 import { readFileOrDefault } from '../utils/file_helper.js'
 import { slash } from '@adonisjs/core/helpers'
 import { stubsRoot } from '../../stubs/main.js'
-import { cp } from 'node:fs/promises'
+import { cp, readdir } from 'node:fs/promises'
 import {
   SourceFile,
   VariableDeclarationStructure,
@@ -15,6 +15,7 @@ export default class BaseScaffold {
   declare codemods: Codemods
 
   #contents: Map<string, string> = new Map()
+  #migrations?: string[]
 
   constructor(protected command: ConfigureCommand) {}
 
@@ -34,7 +35,7 @@ export default class BaseScaffold {
     this.codemods = await this.command.createCodemods()
   }
 
-  async isProviderRegistered(path: string) {
+  async hasProvider(path: string) {
     let contents = this.#contents.get('adonisrc.ts')
 
     if (!contents) {
@@ -47,7 +48,7 @@ export default class BaseScaffold {
 
   async copyView(stubName: string) {
     const stub = this.app.makePath(stubsRoot, 'views', stubName)
-    const dest = this.app.viewsPath(stubName.replace('.stub', '.ts'))
+    const dest = this.app.viewsPath(stubName.replace('.stub', '.edge'))
     await this.copyStub(stub, dest)
   }
 
@@ -76,6 +77,24 @@ export default class BaseScaffold {
 
       action.skipped('file already exists')
     }
+  }
+
+  async stubMigration(migrationStub: string) {
+    const name = slash(migrationStub).split('.stub').at(0)?.split('/').reverse().at(0)
+
+    if (!name) {
+      throw new Error(`Migration name could note be found for: ${migrationStub}`)
+    }
+
+    if (!this.#migrations) {
+      this.#migrations = await readdir(this.app.migrationsPath())
+    }
+
+    if (this.#migrations.some((migration) => migration.includes(name))) {
+      return this.logger.action(`create ${name}`).skipped('migration already exists')
+    }
+
+    await this.codemods.makeUsingStub(stubsRoot, migrationStub, {})
   }
 
   getLogPath(path: string) {
