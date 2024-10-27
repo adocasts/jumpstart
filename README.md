@@ -29,21 +29,27 @@ It is recommended to start from the **Web Starter Kit** as it comes out-of-the-b
 - 📏 Slim Starter Kit
 
 ## Requires
-We require the following AdonisJS core packages. If you're missing any, we'll walk you through adding any you're missing.
+We require the following AdonisJS core packages. If you're missing any, we'll walk you through adding any you're missing during the configuration step!
 - [Vite](https://docs.adonisjs.com/guides/basics/vite) (`@adonisjs/vite`)
 - [VineJS](https://docs.adonisjs.com/guides/basics/validation) (`vine`)
 - [EdgeJS](https://docs.adonisjs.com/guides/views-and-templates/edgejs) (`edge`)
 - [Session](https://docs.adonisjs.com/guides/basics/session) (`@adonisjs/session`)
 - [Shield](https://docs.adonisjs.com/guides/security/securing-ssr-applications) (`@adonisjs/shield`)
-- [Auth (Session Guard)](https://docs.adonisjs.com/guides/authentication/introduction) (`@adonisjs/auth`)
+- [Auth (**Session Guard**)](https://docs.adonisjs.com/guides/authentication/introduction) (`@adonisjs/auth`)
 - [Lucid](https://docs.adonisjs.com/guides/database/lucid) (`@adonisjs/lucid`)
 - [Mail](https://docs.adonisjs.com/guides/digging-deeper/mail) (`@adonisjs/mail`)
+
+## Prerequisites
+- AdonisJS 6 web/slim project (`npm init adonisjs@latest`)
+- If `@adonisjs/auth` is already configured, you must be using the session guard
 
 ## Getting Started
 Adocasts Jumpstart only needs to run once and adds/installs everything needed directly into your project so you have full control to change anything you wish.
 ```shell
 node ace add @adocasts.com/jumpstart
 ```
+
+## Actions Performed
 All you need to do is install & configure Adocasts Jumpstart. It'll then:
 1. Walk you through adding any missing AdonisJS core packages
 2. Install the following dependencies directly into your project. Feel free to remove any you don't wish to use
