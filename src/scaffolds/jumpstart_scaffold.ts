@@ -181,7 +181,7 @@ export default class JumpstartScaffold extends BaseScaffold {
 
     await this.codemods.makeUsingStub(stubsRoot, 'start/globals.stub', {})
     await this.codemods.updateRcFile((rcFile) => {
-      rcFile.addPreloadFile('#start/globals')
+      rcFile.addPreloadFile('#start/globals', ['web'])
     })
   }
 
@@ -197,9 +197,9 @@ export default class JumpstartScaffold extends BaseScaffold {
     await this.copyView('emails')
 
     // stubs -> migrations
-    this.stubMigration('migrations/create_email_histories_table.stub')
-    this.stubMigration('migrations/create_password_reset_tokens_table.stub')
-    this.stubMigration('migrations/create_remember_me_tokens_table.stub')
+    await this.stubMigration('migrations/create_email_histories_table.stub')
+    await this.stubMigration('migrations/create_password_reset_tokens_table.stub')
+    await this.stubMigration('migrations/create_remember_me_tokens_table.stub')
 
     // stubs -> models
     await this.copyModel('email_history.stub')

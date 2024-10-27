@@ -67,6 +67,7 @@ All you need to do is install & configure Adocasts Jumpstart. It'll then:
    - Views -> Pages
 8. Adds Jumpstart's routes to your `routes.ts` file
 9. Adds auth methods to your user model
+10. Lastly, you can optionally uninstall `@adocasts.com/jumpstart`. Once everything is scaffolded, you no longer need it.
 
 After that, be sure to update any new environment variables or configurations that may have been added from missing AdonisJS core packages, boot it up, and visit `/jumpstart`.
 
