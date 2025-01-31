@@ -24,7 +24,6 @@
           </a>
           <nav class="flex flex-wrap items-center mb-5 text-sm md:mb-0 md:pl-8 md:ml-8 md:border-l md:border-gray-200">
             <a href="{{ route('jumpstart') }}" class="mr-5 font-medium leading-6 text-gray-600 hover:text-gray-900">Home</a>
-            <a href="#_" class="mr-5 font-medium leading-6 text-gray-600 hover:text-gray-900">Documentation</a>
             <a href="https://adonisjs.com" target="_blank" class="mr-5 font-medium leading-6 text-gray-600 hover:text-gray-900">AdonisJS</a>
             <a href="https://adocasts.com" target="_blank" class="mr-5 font-medium leading-6 text-gray-600 hover:text-gray-900">Adocasts</a>
           </nav>
@@ -79,7 +78,9 @@
     <!-- End Navigation -->
 
     <main class="px-8">
-      {{{ await $slots.main() }}}
+      <div class="max-w-7xl mx-auto">
+        {{{ await $slots.main() }}}
+      </div>
     </main>
 
     @!toast.flash()
